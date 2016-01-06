@@ -6,16 +6,20 @@ import org.apache.commons.io.FilenameUtils;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttribute;
 
 public class SubtitleThing {
 
     private final String movieFileName, movieFileWoExt;
-    private final String sub2srtFile;
+    private String sub2srtFile;
     private final SubtitleChooseDialog dialog;
 
     public static void main(String[] args) {
-        System.out.println("SubtitleThing v0.0.2");
-        if (args.length != 2) {
+        System.out.println("SubtitleThing v0.0.3");
+        if (args.length != 1) {
             System.out.println("Usage: SubtitleThing <movie file>");
             return;
         }
@@ -30,11 +34,21 @@ public class SubtitleThing {
 
     public SubtitleThing(String[] args) {
         // get movie file from arguments, and get the name without extension
-        String sub2srtRelative = args[0];
-        movieFileName = args[1];
+        movieFileName = args[0];
 
-        final File f = new File(sub2srtRelative);
-        sub2srtFile = f.getAbsolutePath();
+        // load sub2srt to a temp file
+        try {
+            File tempSub2SrtFile = File.createTempFile("sub2str", "pl"); // create a temp file
+            tempSub2SrtFile.deleteOnExit();                              // which will be deleted when JVM exists
+
+            // load sub2srt from resources
+            InputStream sub2srtStream = SubtitleThing.class.getClassLoader().getResourceAsStream("sub2srt/sub2srt");
+            Files.copy(sub2srtStream, tempSub2SrtFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            sub2srtFile = tempSub2SrtFile.getAbsolutePath();
+        } catch (IOException e) {
+            System.err.println("sub2srt could not be loaded");
+            System.exit(1);
+        }
 
         // get full movie path for dialog
         final File movieFile = new File(movieFileName);
@@ -52,7 +66,8 @@ public class SubtitleThing {
         final String outputFilePath = movieFileWoExt + ".srt";
         final File outputFile = new File(outputFilePath);
         if (outputFile.exists()) {
-            int n = JOptionPane.showOptionDialog(dialog, "Subtitle file exists. Overwrite?", "SubtitleThing",  JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+            int n = JOptionPane.showOptionDialog(dialog, "Subtitle file exists. Overwrite?", "SubtitleThing",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
             if (n == JOptionPane.YES_OPTION) {
                 System.out.println("Overwrite");
                 outputFile.delete();
