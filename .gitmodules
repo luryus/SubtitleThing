@@ -1,0 +1,3 @@
+[submodule "src/main/resources/sub2srt"]
+	path = src/main/resources/sub2srt
+	url = https://github.com/luryus/sub2srt.git
